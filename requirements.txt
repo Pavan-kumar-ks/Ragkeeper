@@ -1,0 +1,11 @@
+langchain-core
+langchain-text-splitters
+langchain-huggingface
+langchain-groq
+langchain-qdrant
+qdrant-client
+sentence-transformers
+GitPython
+pydantic-settings
+python-dotenv
+tqdm
