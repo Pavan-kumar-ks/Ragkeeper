@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     langchain_repo_url: str = "https://github.com/langchain-ai/docs.git"
     langchain_repo_path: str = "./data/langchain_repo"
     docs_root_subdir: str = "src/oss"
+    state_db_path: str = "./data/state.db"
 
     chunk_size: int = 1000
     chunk_overlap: int = 200

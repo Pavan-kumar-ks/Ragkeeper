@@ -1,8 +1,11 @@
 import argparse
 
+from . import state
+from .config import get_settings
 from .eval.run_eval import run_evaluation
 from .ingest import run_ingestion
 from .rag_chain import RagKeeperChat
+from .vectorstore import get_client
 
 
 def cmd_ingest(args: argparse.Namespace) -> None:
@@ -38,6 +41,38 @@ def cmd_eval(args: argparse.Namespace) -> None:
     run_evaluation(k=args.k)
 
 
+def cmd_status(_args: argparse.Namespace) -> None:
+    settings = get_settings()
+    conn = state.init_db(settings.state_db_path)
+    try:
+        latest = state.get_latest_sync_run(conn)
+    finally:
+        conn.close()
+
+    client = get_client(settings.qdrant_url)
+    if client.collection_exists(settings.qdrant_collection):
+        point_count = client.count(settings.qdrant_collection, exact=True).count
+    else:
+        point_count = 0
+
+    print(f"Collection: {settings.qdrant_collection} ({point_count} points)\n")
+
+    if latest is None:
+        print("No sync runs recorded yet. Run 'python main.py ingest' first.")
+        return
+
+    print(f"Last sync run: {latest['status']} at {latest['finished_at']}")
+    print(f"Commit: {latest['commit_hash']}")
+    print(
+        f"Files — added: {latest['files_added']}, updated: {latest['files_updated']}, "
+        f"deleted: {latest['files_deleted']}, unchanged: {latest['files_unchanged']}"
+    )
+    print(f"Chunks — added: {latest['chunks_added']}, deleted: {latest['chunks_deleted']}")
+    print(f"Duration: {latest['duration_s']:.1f}s")
+    if latest["error"]:
+        print(f"Error: {latest['error']}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ragkeeper", description="RAGKeeper: freshness-aware RAG for LangChain docs")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -52,6 +87,9 @@ def main() -> None:
     eval_parser = subparsers.add_parser("eval", help="Run the retrieval/generation/end-to-end eval harness against the golden set")
     eval_parser.add_argument("--k", type=int, default=None, help="Override retrieval top-k (defaults to settings.top_k)")
     eval_parser.set_defaults(func=cmd_eval)
+
+    status_parser = subparsers.add_parser("status", help="Show index health: last sync run + collection point count")
+    status_parser.set_defaults(func=cmd_status)
 
     args = parser.parse_args()
     args.func(args)
