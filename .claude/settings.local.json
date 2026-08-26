@@ -3,7 +3,10 @@
     "allow": [
       "PowerShell(& .\\\\venv\\\\Scripts\\\\python.exe -c \"import langchain_core, langchain_text_splitters, langchain_huggingface, langchain_groq, langchain_qdrant, qdrant_client, sentence_transformers, git, pydantic_settings, dotenv, tqdm; print\\('all deps importable'\\)\")",
       "PowerShell(winget list --id Git.Git -s winget --accept-source-agreements 2>&1)",
-      "PowerShell(winget list --id Docker.DockerDesktop -s winget --accept-source-agreements 2>&1)"
+      "PowerShell(winget list --id Docker.DockerDesktop -s winget --accept-source-agreements 2>&1)",
+      "Bash(./venv/Scripts/python.exe -m pip install -r requirements.txt)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

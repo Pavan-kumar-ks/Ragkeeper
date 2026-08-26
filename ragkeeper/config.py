@@ -9,15 +9,15 @@ class Settings(BaseSettings):
 
     groq_api_key: str
 
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "langchain_docs"
 
-    langchain_repo_url: str = "https://github.com/langchain-ai/langchain.git"
+    langchain_repo_url: str = "https://github.com/langchain-ai/docs.git"
     langchain_repo_path: str = "./data/langchain_repo"
-    docs_root_subdir: str = "docs"
+    docs_root_subdir: str = "src/oss"
 
     chunk_size: int = 1000
     chunk_overlap: int = 200

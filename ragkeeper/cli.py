@@ -1,5 +1,6 @@
 import argparse
 
+from .eval.run_eval import run_evaluation
 from .ingest import run_ingestion
 from .rag_chain import RagKeeperChat
 
@@ -33,6 +34,10 @@ def cmd_chat(_args: argparse.Namespace) -> None:
         print()
 
 
+def cmd_eval(args: argparse.Namespace) -> None:
+    run_evaluation(k=args.k)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ragkeeper", description="RAGKeeper: freshness-aware RAG for LangChain docs")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -43,6 +48,10 @@ def main() -> None:
 
     chat_parser = subparsers.add_parser("chat", help="Interactive Q&A over the indexed LangChain docs")
     chat_parser.set_defaults(func=cmd_chat)
+
+    eval_parser = subparsers.add_parser("eval", help="Run the retrieval/generation/end-to-end eval harness against the golden set")
+    eval_parser.add_argument("--k", type=int, default=None, help="Override retrieval top-k (defaults to settings.top_k)")
+    eval_parser.set_defaults(func=cmd_eval)
 
     args = parser.parse_args()
     args.func(args)

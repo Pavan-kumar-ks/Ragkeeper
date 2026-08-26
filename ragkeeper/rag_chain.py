@@ -33,7 +33,7 @@ class RagKeeperChat:
         embeddings = get_embeddings(settings.embedding_model)
         vectorstore = get_vectorstore(client, settings.qdrant_collection, embeddings)
         self.retriever = vectorstore.as_retriever(search_kwargs={"k": settings.top_k})
-        self.llm = ChatGroq(model=settings.groq_model, temperature=0)
+        self.llm = ChatGroq(model=settings.groq_model, temperature=0, api_key=settings.groq_api_key)
         self.chain = PROMPT | self.llm | StrOutputParser()
 
     def answer(self, question: str) -> tuple[str, list[str]]:
