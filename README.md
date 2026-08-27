@@ -2,7 +2,7 @@
 
 A freshness-aware, retrieval-tuned RAG chatbot over the LangChain documentation.
 Docs are cloned, chunked, embedded locally, and stored in Qdrant; answers are generated
-via Groq with source citations. Phases 1–3 are complete.
+via Groq with source citations. Phases 1–4 are complete.
 
 ## Architecture
 
@@ -58,6 +58,35 @@ on the golden set:
 | recall@k | 0.867 | answer relevance | 4.67 | total tokens | 18,774 |
 | MRR | 0.722 | correctness | 4.47 | total cost | $0.00574 |
 | nDCG@k | 1.123 | | | | |
+
+## Phase 4 — MCP interface
+Exposes the existing Phase 3 retrieval pipeline (and Phase 2 index-health data) to external
+MCP clients/agents, with no change to the retrieval algorithm itself:
+
+- **`search_docs(query, top_k=4)`** — runs the same hybrid retrieval + reranking pipeline
+  used by `chat`/`eval` (`ragkeeper/retrieval.py`), returns structured results
+  (`source_path`, `section_title`, `header_hierarchy`, `content`, `rerank_score`,
+  `content_hash`, `commit_hash`). Retrieval only — it does not call an LLM.
+- **`get_index_health()`** — combines the SQLite sync history (Phase 2) with a live Qdrant
+  point count and reports `collection_exists`, `point_count`, `embedding_model`,
+  `last_sync`, and `consistent`/`notes` if state and the vector store disagree.
+
+Run the server (stdio transport):
+```
+python main.py mcp
+```
+Point an MCP client at it, e.g. in Claude Desktop's config:
+```json
+{
+  "mcpServers": {
+    "ragkeeper": {
+      "command": "python",
+      "args": ["main.py", "mcp"],
+      "cwd": "<absolute path to this repo>"
+    }
+  }
+}
+```
 
 ## Setup
 
@@ -123,6 +152,11 @@ Evaluate against the golden set:
 python main.py eval [--k N]
 ```
 Writes a full report (per-question + aggregate) to `eval_results/eval_<timestamp>.json`.
+
+Run the MCP server (`search_docs`, `get_index_health`):
+```
+python main.py mcp
+```
 
 ## Verification
 

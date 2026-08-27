@@ -10,3 +10,4 @@ pydantic-settings
 python-dotenv
 tqdm
 rank-bm25
+mcp

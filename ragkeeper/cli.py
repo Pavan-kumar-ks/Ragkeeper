@@ -41,6 +41,12 @@ def cmd_eval(args: argparse.Namespace) -> None:
     run_evaluation(k=args.k)
 
 
+def cmd_mcp(_args: argparse.Namespace) -> None:
+    from .mcp.server import main as run_mcp_server
+
+    run_mcp_server()
+
+
 def cmd_status(_args: argparse.Namespace) -> None:
     settings = get_settings()
     conn = state.init_db(settings.state_db_path)
@@ -90,6 +96,9 @@ def main() -> None:
 
     status_parser = subparsers.add_parser("status", help="Show index health: last sync run + collection point count")
     status_parser.set_defaults(func=cmd_status)
+
+    mcp_parser = subparsers.add_parser("mcp", help="Run the MCP server (search_docs, get_index_health) over stdio")
+    mcp_parser.set_defaults(func=cmd_mcp)
 
     args = parser.parse_args()
     args.func(args)
