@@ -1,7 +1,7 @@
 from mcp.server import MCPServer
 
-from .. import state
 from ..config import get_settings
+from ..health import compute_index_health
 from ..retrieval import BM25Index, HybridRetriever, Reranker, RetrievalPipeline
 from ..vectorstore import get_client, get_embeddings, get_vectorstore
 
@@ -50,34 +50,7 @@ def search_docs(query: str, top_k: int = 4) -> list[dict]:
 def get_index_health() -> dict:
     """Report RAGKeeper index health: Qdrant point count, embedding model, latest sync-run
     summary from the local state DB, and whether state/vector store appear consistent."""
-    conn = state.init_db(_settings.state_db_path)
-    try:
-        latest = state.get_latest_sync_run(conn)
-    finally:
-        conn.close()
-
-    collection_exists = _client.collection_exists(_settings.qdrant_collection)
-    point_count = _client.count(_settings.qdrant_collection, exact=True).count if collection_exists else 0
-
-    notes = []
-    if not collection_exists:
-        notes.append("Qdrant collection does not exist")
-    if latest is None:
-        notes.append("no sync runs recorded yet")
-    elif latest["status"] == "success" and point_count == 0:
-        notes.append("last sync reported success but collection is empty")
-    elif latest["status"] != "success":
-        notes.append(f"last sync run did not succeed: {latest.get('error')}")
-
-    return {
-        "collection": _settings.qdrant_collection,
-        "collection_exists": collection_exists,
-        "point_count": point_count,
-        "embedding_model": _settings.embedding_model,
-        "last_sync": latest,
-        "consistent": not notes,
-        "notes": notes,
-    }
+    return compute_index_health(_settings, _client)
 
 
 def main() -> None:

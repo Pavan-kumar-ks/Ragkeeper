@@ -28,11 +28,11 @@ def cmd_chat(_args: argparse.Namespace) -> None:
         if question.lower() in {"exit", "quit"}:
             break
 
-        answer, sources = chat.answer(question)
-        print(f"\nRAGKeeper: {answer}\n")
-        if sources:
+        result = chat.answer(question)
+        print(f"\nRAGKeeper: {result['answer']}\n")
+        if result["sources"]:
             print("Sources:")
-            for src in sources:
+            for src in result["sources"]:
                 print(f"  - {src}")
         print()
 
@@ -45,6 +45,21 @@ def cmd_mcp(_args: argparse.Namespace) -> None:
     from .mcp.server import main as run_mcp_server
 
     run_mcp_server()
+
+
+def cmd_schedule(args: argparse.Namespace) -> None:
+    from .scheduler import run_scheduler
+
+    run_scheduler(interval_hours=args.interval_hours)
+
+
+def cmd_dashboard(_args: argparse.Namespace) -> None:
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    app_path = Path(__file__).resolve().parent.parent / "dashboard" / "app.py"
+    subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=True)
 
 
 def cmd_status(_args: argparse.Namespace) -> None:
@@ -99,6 +114,17 @@ def main() -> None:
 
     mcp_parser = subparsers.add_parser("mcp", help="Run the MCP server (search_docs, get_index_health) over stdio")
     mcp_parser.set_defaults(func=cmd_mcp)
+
+    dashboard_parser = subparsers.add_parser("dashboard", help="Launch the Streamlit dashboard")
+    dashboard_parser.set_defaults(func=cmd_dashboard)
+
+    schedule_parser = subparsers.add_parser(
+        "schedule", help="Run ingest on a repeating interval (freshness-aware auto-sync)"
+    )
+    schedule_parser.add_argument(
+        "--interval-hours", type=float, default=24.0, help="Hours between sync runs (default: 24)"
+    )
+    schedule_parser.set_defaults(func=cmd_schedule)
 
     args = parser.parse_args()
     args.func(args)

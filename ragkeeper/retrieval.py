@@ -84,25 +84,33 @@ class HybridRetriever:
         self.dense_weight = dense_weight
         self.bm25_weight = bm25_weight
 
-    def retrieve_candidates(self, question: str, n: int | None = None) -> list[Document]:
+    def _merge(self, question: str, n: int) -> tuple[list[str], dict[str, Document], dict[str, int], dict[str, int], dict[str, float]]:
         dense_docs = self.vectorstore.similarity_search(question, k=self.candidate_k)
         bm25_docs = self.bm25_index.search(question, self.candidate_k)
 
         rrf_scores: dict[str, float] = defaultdict(float)
         doc_by_key: dict[str, Document] = {}
+        dense_rank: dict[str, int] = {}
+        bm25_rank: dict[str, int] = {}
 
         for rank, doc in enumerate(dense_docs):
             key = _doc_key(doc)
             rrf_scores[key] += self.dense_weight / (_RRF_K + rank + 1)
             doc_by_key[key] = doc
+            dense_rank[key] = rank + 1
 
         for rank, doc in enumerate(bm25_docs):
             key = _doc_key(doc)
             rrf_scores[key] += self.bm25_weight / (_RRF_K + rank + 1)
             doc_by_key.setdefault(key, doc)
+            bm25_rank[key] = rank + 1
 
-        ranked_keys = sorted(rrf_scores, key=lambda key: rrf_scores[key], reverse=True)
-        return [doc_by_key[key] for key in ranked_keys[: n or self.k]]
+        ranked_keys = sorted(rrf_scores, key=lambda key: rrf_scores[key], reverse=True)[:n]
+        return ranked_keys, doc_by_key, dense_rank, bm25_rank, rrf_scores
+
+    def retrieve_candidates(self, question: str, n: int | None = None) -> list[Document]:
+        ranked_keys, doc_by_key, _, _, _ = self._merge(question, n or self.k)
+        return [doc_by_key[key] for key in ranked_keys]
 
     def retrieve(self, question: str) -> list[Document]:
         return self.retrieve_candidates(question, self.k)
@@ -162,3 +170,25 @@ class RetrievalPipeline:
     def retrieve_with_score(self, question: str) -> list[tuple[Document, float]]:
         candidates = self._gather_candidates(question)
         return self.reranker.rerank_with_scores(question, candidates, self.k)
+
+    def retrieve_with_trace(self, question: str) -> list[dict]:
+        candidates = self._gather_candidates(question)
+        _, _, dense_rank, bm25_rank, rrf_scores = self.hybrid_retriever._merge(question, self.pool_size)
+        reranked = self.reranker.rerank_with_scores(question, candidates, self.k)
+
+        trace = []
+        for final_rank, (doc, rerank_score) in enumerate(reranked, start=1):
+            key = _doc_key(doc)
+            trace.append(
+                {
+                    "doc": doc,
+                    "source_path": doc.metadata.get("source_path"),
+                    "section_title": doc.metadata.get("section_title"),
+                    "dense_rank": dense_rank.get(key),
+                    "bm25_rank": bm25_rank.get(key),
+                    "rrf_score": rrf_scores.get(key),
+                    "rerank_score": rerank_score,
+                    "final_rank": final_rank,
+                }
+            )
+        return trace

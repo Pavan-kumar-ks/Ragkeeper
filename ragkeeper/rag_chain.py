@@ -1,8 +1,10 @@
-from langchain_core.output_parsers import StrOutputParser
+import time
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from .config import get_settings
+from .eval.pricing import estimate_cost
 from .retrieval import BM25Index, HybridRetriever, Reranker, RetrievalPipeline, make_llm_query_expander
 from .vectorstore import get_client, get_embeddings, get_vectorstore
 
@@ -46,16 +48,36 @@ class RagKeeperChat:
             hybrid_retriever, reranker, k=settings.top_k, pool_size=20, query_expander=query_expander
         )
         self.confidence_threshold = settings.confidence_threshold
-        self.chain = PROMPT | self.llm | StrOutputParser()
+        self.model = settings.groq_model
 
-    def answer(self, question: str) -> tuple[str, list[str]]:
-        ranked = self.retriever.retrieve_with_score(question)
-        if not ranked or ranked[0][1] < self.confidence_threshold:
-            return FALLBACK_ANSWER, []
+    def answer(self, question: str, retrieval_query: str | None = None) -> dict:
+        retrieval_start = time.perf_counter()
+        trace = self.retriever.retrieve_with_trace(retrieval_query or question)
+        retrieval_latency_ms = (time.perf_counter() - retrieval_start) * 1000
 
-        docs = [doc for doc, _score in ranked]
+        if not trace or trace[0]["rerank_score"] < self.confidence_threshold:
+            return {
+                "answer": FALLBACK_ANSWER,
+                "sources": [],
+                "trace": trace,
+                "retrieval_latency_ms": retrieval_latency_ms,
+                "generation_latency_ms": 0.0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "cost_usd": 0.0,
+            }
+
+        docs = [entry["doc"] for entry in trace]
         context = format_context(docs)
-        answer_text = self.chain.invoke({"context": context, "question": question})
+
+        generation_start = time.perf_counter()
+        messages = PROMPT.format_messages(context=context, question=question)
+        ai_message = self.llm.invoke(messages)
+        generation_latency_ms = (time.perf_counter() - generation_start) * 1000
+
+        token_usage = ai_message.response_metadata.get("token_usage", {})
+        prompt_tokens = token_usage.get("prompt_tokens", 0)
+        completion_tokens = token_usage.get("completion_tokens", 0)
 
         sources: list[str] = []
         for doc in docs:
@@ -63,4 +85,13 @@ class RagKeeperChat:
             if src and src not in sources:
                 sources.append(src)
 
-        return answer_text, sources
+        return {
+            "answer": ai_message.content,
+            "sources": sources,
+            "trace": trace,
+            "retrieval_latency_ms": retrieval_latency_ms,
+            "generation_latency_ms": generation_latency_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "cost_usd": estimate_cost(self.model, prompt_tokens, completion_tokens),
+        }

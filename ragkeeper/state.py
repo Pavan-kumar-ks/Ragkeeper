@@ -1,3 +1,5 @@
+import datetime as dt
+import json
 import sqlite3
 from pathlib import Path
 
@@ -29,6 +31,22 @@ CREATE TABLE IF NOT EXISTS sync_runs (
 )
 """
 
+QUERY_LOG_SCHEMA = """
+CREATE TABLE IF NOT EXISTS query_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    asked_at TEXT NOT NULL,
+    question TEXT NOT NULL,
+    retrieval_query TEXT NOT NULL,
+    sources TEXT,
+    retrieval_latency_ms REAL,
+    generation_latency_ms REAL,
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    cost_usd REAL,
+    feedback TEXT
+)
+"""
+
 
 def init_db(path: str) -> sqlite3.Connection:
     db_path = Path(path)
@@ -36,6 +54,7 @@ def init_db(path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
     conn.execute(FILE_STATE_SCHEMA)
     conn.execute(SYNC_RUNS_SCHEMA)
+    conn.execute(QUERY_LOG_SCHEMA)
     conn.commit()
     return conn
 
@@ -158,5 +177,60 @@ def get_sync_run_history(conn: sqlite3.Connection, limit: int = 10) -> list[dict
     keys = [
         "started_at", "finished_at", "commit_hash", "files_added", "files_updated", "files_deleted",
         "files_unchanged", "chunks_added", "chunks_deleted", "duration_s", "status", "error",
+    ]
+    return [dict(zip(keys, row)) for row in rows]
+
+
+def log_query(
+    conn: sqlite3.Connection,
+    question: str,
+    retrieval_query: str,
+    sources: list[str],
+    retrieval_latency_ms: float,
+    generation_latency_ms: float,
+    prompt_tokens: int,
+    completion_tokens: int,
+    cost_usd: float | None,
+) -> int:
+    cur = conn.execute(
+        """
+        INSERT INTO query_log (
+            asked_at, question, retrieval_query, sources, retrieval_latency_ms,
+            generation_latency_ms, prompt_tokens, completion_tokens, cost_usd
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            dt.datetime.now(dt.timezone.utc).isoformat(),
+            question,
+            retrieval_query,
+            json.dumps(sources),
+            retrieval_latency_ms,
+            generation_latency_ms,
+            prompt_tokens,
+            completion_tokens,
+            cost_usd,
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_feedback(conn: sqlite3.Connection, query_id: int, feedback: str) -> None:
+    conn.execute("UPDATE query_log SET feedback = ? WHERE id = ?", (feedback, query_id))
+    conn.commit()
+
+
+def get_recent_queries(conn: sqlite3.Connection, limit: int = 50) -> list[dict]:
+    rows = conn.execute(
+        """
+        SELECT id, asked_at, question, retrieval_query, sources, retrieval_latency_ms,
+               generation_latency_ms, prompt_tokens, completion_tokens, cost_usd, feedback
+        FROM query_log ORDER BY id DESC LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    keys = [
+        "id", "asked_at", "question", "retrieval_query", "sources", "retrieval_latency_ms",
+        "generation_latency_ms", "prompt_tokens", "completion_tokens", "cost_usd", "feedback",
     ]
     return [dict(zip(keys, row)) for row in rows]
