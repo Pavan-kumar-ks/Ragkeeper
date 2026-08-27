@@ -2,7 +2,8 @@
 
 A freshness-aware, retrieval-tuned RAG chatbot over the LangChain documentation.
 Docs are cloned, chunked, embedded locally, and stored in Qdrant; answers are generated
-via Groq with source citations. Phases 1–4 are complete.
+via Groq with source citations. Phases 1–5 are complete, plus scheduled auto-sync and a
+containerized deployment.
 
 ## Architecture
 
@@ -88,6 +89,79 @@ Point an MCP client at it, e.g. in Claude Desktop's config:
 }
 ```
 
+## Phase 5 — Dashboard & observability
+A Streamlit dashboard (`dashboard/`) built entirely on top of the existing shared services
+(retrieval pipeline, `state.py`, `health.py`) — no retrieval/health logic is duplicated.
+
+- **Chat** — history-aware chat (`st.session_state` + `st.rerun()` so the input always stays
+  below the full conversation), follow-up questions condensed into standalone search
+  queries before retrieval. Each answer shows a **Sources** expander, a **Retrieval details**
+  expander (per-doc dense/BM25/RRF/rerank ranks and scores from
+  `RetrievalPipeline.retrieve_with_trace()`), a latency/token/cost caption, and 👍/👎
+  feedback buttons logged to SQLite.
+- **Index Health** — the same `compute_index_health()` used by the MCP server's
+  `get_index_health`, plus sync-run history and live system status.
+- **Evaluation** — browse and compare past `eval` runs (`eval_results/*.json`), drill into
+  per-question results.
+- **Analytics** — query log (latency, tokens, cost, feedback) recorded from every chat turn.
+
+Launch it:
+```
+python main.py dashboard
+```
+
+## Automation — scheduled auto-sync
+`ragkeeper/scheduler.py` wraps the Phase 2 incremental `run_ingestion()` in a sleep loop, so
+the docs stay fresh without a manual `ingest` each time. A failed sync cycle is logged
+(`run_ingestion` already records `status="error"` via `state.record_sync_run`) but does not
+kill the loop — the next cycle still runs on schedule.
+
+```
+python main.py schedule [--interval-hours N]   # default: 24
+```
+
+Note: the dashboard/MCP server build their BM25 keyword index once at startup from a Qdrant
+snapshot. Dense vector search always queries Qdrant live, so it reflects new content
+immediately, but BM25 results won't include docs added by a `schedule` cycle until that
+process restarts.
+
+## Deployment — Docker / Podman
+`Dockerfile` + `docker-compose.yml` run the whole stack as three containers, all driven by
+the same `.env`:
+
+- `qdrant` — vector store (unchanged from local dev), with a health check.
+- `app` — the Streamlit dashboard (`streamlit run dashboard/app.py`), port `8501`.
+- `scheduler` — `python main.py schedule --interval-hours 24`, the automation above running
+  continuously.
+
+`app` and `scheduler` share the same image, share a `./data` bind mount (state DB + repo
+clone), and both reach Qdrant via the container network name (`QDRANT_URL=http://qdrant:6333`,
+overridden in compose — no need to edit `.env` for this).
+
+```
+docker compose build
+docker compose up -d
+```
+
+Podman works as a drop-in replacement for the same files: `podman compose build` /
+`podman compose up -d`. `torch` is pinned to the CPU-only wheel
+(`--index-url https://download.pytorch.org/whl/cpu`) before `requirements.txt` is installed —
+`sentence-transformers` otherwise pulls multi-GB CUDA packages that aren't needed for
+CPU-only embedding/reranking and can time out the build.
+
+**Windows/WSL2 caveat**: on some machines, WSL2's `localhost` port-forwarding relay
+(`wslrelay.exe`) gets stuck and never forwards `http://localhost:8501` (even
+`podman machine stop/start` or a full `wsl --shutdown` may not fix it). If the dashboard
+won't load, open the WSL VM's real IP instead — the same address already used for
+`QDRANT_URL` locally (e.g. `http://172.27.122.123:8501`). Get the current IP with:
+```
+wsl -d podman-machine-default -- ip addr show eth0
+```
+It can change after the VM restarts.
+
+**Not yet built**: TLS/reverse proxy for a real public deployment (needs a domain), and
+auto-restarting `app` after each `scheduler` sync to refresh its BM25 index.
+
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in `GROQ_API_KEY`. Embeddings run locally, so no
@@ -156,6 +230,16 @@ Writes a full report (per-question + aggregate) to `eval_results/eval_<timestamp
 Run the MCP server (`search_docs`, `get_index_health`):
 ```
 python main.py mcp
+```
+
+Launch the dashboard:
+```
+python main.py dashboard
+```
+
+Run the freshness-aware auto-sync loop:
+```
+python main.py schedule [--interval-hours N]
 ```
 
 ## Verification
