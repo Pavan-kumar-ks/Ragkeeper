@@ -9,3 +9,4 @@ GitPython
 pydantic-settings
 python-dotenv
 tqdm
+rank-bm25

@@ -8,6 +8,7 @@ from langchain_groq import ChatGroq
 
 from ..config import get_settings
 from ..rag_chain import PROMPT, format_context
+from ..retrieval import BM25Index, HybridRetriever, Reranker, RetrievalPipeline
 from ..vectorstore import get_client, get_embeddings, get_vectorstore
 from .golden_set import GOLDEN_SET
 from .judge import build_judge, judge_answer
@@ -29,16 +30,15 @@ def _invoke_with_retry(fn, *args, max_retries: int = 6, **kwargs):
             time.sleep(wait_s)
 
 
-def _evaluate_one(vectorstore, llm, judge_llm, model: str, k: int, entry: dict) -> dict:
+def _evaluate_one(retriever, llm, judge_llm, model: str, k: int, entry: dict) -> dict:
     question = entry["question"]
     expected_sources = entry["expected_sources"]
     reference_answer = entry["reference_answer"]
 
     retrieval_start = time.perf_counter()
-    docs_with_scores = vectorstore.similarity_search_with_score(question, k=k)
+    docs = retriever.retrieve(question)
     retrieval_latency_ms = (time.perf_counter() - retrieval_start) * 1000
 
-    docs = [doc for doc, _score in docs_with_scores]
     retrieved_sources = [doc.metadata.get("source_path", "") for doc in docs]
 
     generation_start = time.perf_counter()
@@ -145,13 +145,19 @@ def run_evaluation(k: int | None = None) -> None:
     embeddings = get_embeddings(settings.embedding_model)
     vectorstore = get_vectorstore(client, settings.qdrant_collection, embeddings)
 
+    print("Building BM25 index...")
+    bm25_index = BM25Index(client, settings.qdrant_collection)
+    hybrid_retriever = HybridRetriever(vectorstore, bm25_index, k=eval_k, candidate_k=20)
+    reranker = Reranker()
+    retriever = RetrievalPipeline(hybrid_retriever, reranker, k=eval_k, pool_size=20)
+
     llm = ChatGroq(model=settings.groq_model, temperature=0, api_key=settings.groq_api_key)
     judge_llm = build_judge(settings.groq_model, settings.groq_api_key)
 
     results = []
     for entry in GOLDEN_SET:
         print(f"Evaluating: {entry['question']}")
-        results.append(_evaluate_one(vectorstore, llm, judge_llm, settings.groq_model, eval_k, entry))
+        results.append(_evaluate_one(retriever, llm, judge_llm, settings.groq_model, eval_k, entry))
 
     aggregate = _aggregate(results)
     _print_report(aggregate)

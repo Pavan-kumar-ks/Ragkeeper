@@ -11,6 +11,11 @@ def get_client(url: str) -> QdrantClient:
 
 
 def get_embeddings(model: str) -> HuggingFaceEmbeddings:
+    if "bge" in model.lower():
+        return HuggingFaceEmbeddings(
+            model_name=model,
+            query_encode_kwargs={"prompt": "Represent this sentence for searching relevant passages: "},
+        )
     return HuggingFaceEmbeddings(model_name=model)
 
 

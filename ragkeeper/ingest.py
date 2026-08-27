@@ -9,7 +9,7 @@ from .config import get_settings
 from .git_sync import ensure_repo_synced
 from .hashing import deterministic_point_id, sha256_hex
 from .loader import discover_doc_files, read_file
-from .splitter import header_hierarchy, split_markdown
+from .splitter import build_contextual_text, header_hierarchy, split_markdown
 from .vectorstore import (
     EMBEDDING_DIM,
     delete_by_source_path,
@@ -26,6 +26,8 @@ def _embed_file(client, vectorstore, settings, path, raw_text, rel_path, file_co
     if not chunks:
         return 0
 
+    doc_title = path.stem.replace("_", " ").replace("-", " ")
+
     docs: list[Document] = []
     ids: list[str] = []
     for idx, chunk in enumerate(chunks):
@@ -36,13 +38,15 @@ def _embed_file(client, vectorstore, settings, path, raw_text, rel_path, file_co
             "section_title": hierarchy[-1] if hierarchy else path.stem,
             "chunk_index": idx,
             "content_hash": sha256_hex(chunk.page_content),
+            "raw_content": chunk.page_content,
             "file_content_hash": file_content_hash,
             "commit_hash": commit_hash,
             "repo_url": settings.langchain_repo_url,
             "file_ext": path.suffix,
             "ingested_at": ingested_at,
         }
-        docs.append(Document(page_content=chunk.page_content, metadata=metadata))
+        contextual_text = build_contextual_text(doc_title, hierarchy, chunk.page_content)
+        docs.append(Document(page_content=contextual_text, metadata=metadata))
         ids.append(deterministic_point_id(rel_path, idx))
 
     vectorstore.add_documents(docs, ids=ids)

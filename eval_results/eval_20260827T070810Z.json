@@ -1,0 +1,549 @@
+{
+  "aggregate": {
+    "retrieval": {
+      "precision_at_k": 0.4666666666666667,
+      "recall_at_k": 0.9333333333333333,
+      "mrr": 0.7277777777777777,
+      "ndcg_at_k": 1.2892978468527894
+    },
+    "generation": {
+      "faithfulness": 4.533333333333333,
+      "answer_relevance": 4.6,
+      "correctness": 4.2
+    },
+    "end_to_end": {
+      "avg_latency_ms": 7641.094940000524,
+      "total_tokens": 18666,
+      "total_cost_usd": 0.0057093
+    },
+    "num_questions": 15
+  },
+  "results": [
+    {
+      "question": "How do I create an agent in LangChain?",
+      "answer": "To build an agent in LangChain you use the **`create_agent`** helper.  \nThe basic steps are:\n\n1. **Import the helper**  \n   ```python\n   from langchain.agents import create_agent   # Python\n   # or, in JavaScript/TypeScript:\n   // import { createAgent } from \"@langchain/classic\";\n   ```\n\n2. **Define any custom tools** (functions that the agent can call).  \n   ```python\n   def get_weather(city: str) -> str:\n       \"\"\"Get weather for a given city.\"\"\"\n       return f\"It's always sunny in {city}!\"\n   ```\n\n3. **Create the agent**, supplying:\n   * the model identifier (`model=\"openai:gpt-5.5\"` or `\"claude-sonnet-4-6\"` etc.),\n   * a list of tools (`tools=[get_weather]`),\n   * an optional system prompt that sets the agent\u2019s role (`system_prompt=\"You are a helpful assistant\"`).\n\n   ```python\n   agent = create_agent(\n       model=\"openai:gpt-5.5\",\n       tools=[get_weather],\n       system_prompt=\"You are a helpful assistant\"\n   )\n   ```\n\n4. **Invoke the agent** with a message payload. The payload must contain a `\"messages\"` list where each entry has a `\"role\"` and `\"content\"`.\n\n   ```python\n   result = agent.invoke({\n       \"messages\": [\n           {\"role\": \"user\", \"content\": \"What's the weather in San Francisco?\"}\n       ]\n   })\n   print(result[\"messages\"][-1].content_blocks)   # shows the agent\u2019s answer\n   ```\n\nThat\u2019s all\u2014`create_agent` wires the model, the tool\u2011selection loop, and the system prompt together, giving you a ready\u2011to\u2011use LangChain agent.",
+      "retrieved_sources": [
+        "src/oss/python/releases/langchain-v1.mdx",
+        "src/oss/langchain/overview.mdx",
+        "src/oss/langgraph/studio.mdx",
+        "src/oss/javascript/integrations/tools/exa_search.mdx"
+      ],
+      "expected_sources": [
+        "langchain/agents.mdx",
+        "langchain/quickstart.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.0,
+        "recall_at_k": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_k": 0.0,
+        "latency_ms": 948.8486000045668
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly explains how to create an agent in LangChain, matching the question. It correctly describes using `create_agent` with a model and a list of tools, as in the reference answer, and adds accurate details (imports, optional system_prompt, invocation) that are all supported by the retrieved context. No unsupported or fabricated claims are present."
+      },
+      "end_to_end": {
+        "latency_ms": 3264.397100007045,
+        "prompt_tokens": 1248,
+        "completion_tokens": 474,
+        "total_tokens": 1722,
+        "groq_completion_time_s": 0.991563449,
+        "groq_prompt_time_s": 0.396840307,
+        "cost_usd": 0.0005427
+      }
+    },
+    {
+      "question": "What are tools in LangChain and what can they let an agent do?",
+      "answer": "Tools in LangChain are ready\u2011made utilities (prebuilt tools and toolkits) that an agent can invoke to perform external actions such as web searches, code execution, database queries, and many other common tasks. By attaching these tools to an agent\u2014e.g., via `create_agent`\u2014the agent can reason about which tool to call, execute it (through LangGraph\u2019s `ToolNode` or the standard tool\u2011execution flow), and use the result to answer the user\u2019s query. In short, tools let an agent go beyond pure language\u2011model reasoning and interact with external services to fulfill requests.",
+      "retrieved_sources": [
+        "src/oss/langchain/tools.mdx",
+        "src/oss/langchain/tools.mdx",
+        "src/oss/python/integrations/providers/toolbox.mdx",
+        "src/oss/python/integrations/tools/mcp_toolbox.mdx"
+      ],
+      "expected_sources": [
+        "langchain/tools.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.6309297535714575,
+        "latency_ms": 785.5353000049945
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer accurately describes tools as prebuilt utilities and toolkits, cites examples (web search, code execution, database queries) that are present in the retrieved context, and explains that agents can reason about and invoke these tools via create_agent or ToolNode. This directly addresses the question and matches the reference answer's meaning without adding unsupported claims."
+      },
+      "end_to_end": {
+        "latency_ms": 2060.1999000064097,
+        "prompt_tokens": 694,
+        "completion_tokens": 338,
+        "total_tokens": 1032,
+        "groq_completion_time_s": 0.702556764,
+        "groq_prompt_time_s": 0.034393798,
+        "cost_usd": 0.0003576
+      }
+    },
+    {
+      "question": "What capabilities do LangChain chat models support beyond plain text generation?",
+      "answer": "LangChain chat models work with **message\u2011based** interactions rather than just raw text.\u202fThey:\n\n* Accept a **sequence of messages** as input and return a sequence of chat messages as output.  \n* Allow each message to be given a **distinct role** (e.g., `system`, `human/user`, `assistant/AI`), enabling the model to differentiate instructions, user queries, and AI responses.  \n* Accept a plain string as a shortcut, which is internally wrapped as a `HumanMessage` before being sent to the underlying model.  \n\nThese role\u2011aware, multi\u2011message capabilities go beyond simple plain\u2011text generation.",
+      "retrieved_sources": [
+        "src/oss/javascript/integrations/chat/openai.mdx",
+        "src/oss/javascript/integrations/chat/anthropic.mdx",
+        "src/oss/python/releases/changelog.mdx",
+        "src/oss/langchain/models.mdx"
+      ],
+      "expected_sources": [
+        "langchain/models.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.25,
+        "recall_at_k": 1.0,
+        "mrr": 0.25,
+        "ndcg_at_k": 0.43067655807339306,
+        "latency_ms": 694.7518999950262
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 1,
+        "justification": "The answer directly addresses the question and is fully supported by the retrieved context, describing message sequences, role assignment, and string handling. However, it does not mention the capabilities listed in the reference answer (tool calling, structured output, multimodality, reasoning), so it does not match the expected meaning."
+      },
+      "end_to_end": {
+        "latency_ms": 1868.837899994105,
+        "prompt_tokens": 897,
+        "completion_tokens": 310,
+        "total_tokens": 1207,
+        "groq_completion_time_s": 0.652900912,
+        "groq_prompt_time_s": 0.050956341,
+        "cost_usd": 0.00036704999999999995
+      }
+    },
+    {
+      "question": "What are the three main components of a LangChain message?",
+      "answer": "I don\u2019t know.",
+      "retrieved_sources": [
+        "src/oss/javascript/integrations/chat/anthropic.mdx",
+        "src/oss/langchain/component-architecture.mdx",
+        "src/oss/langchain/messages.mdx",
+        "src/oss/contributing/implement-langchain.mdx"
+      ],
+      "expected_sources": [
+        "langchain/messages.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.25,
+        "recall_at_k": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_k": 0.5,
+        "latency_ms": 642.54470000742
+      },
+      "generation": {
+        "faithfulness": 1,
+        "answer_relevance": 1,
+        "correctness": 1,
+        "justification": "The generated answer simply says \"I don\u2019t know,\" providing no information about the three components of a LangChain message. This does not address the question (low relevance), does not match the reference answer (incorrect), and contains no claims supported by the retrieved context (no faithfulness)."
+      },
+      "end_to_end": {
+        "latency_ms": 11173.664000001736,
+        "prompt_tokens": 999,
+        "completion_tokens": 93,
+        "total_tokens": 1092,
+        "groq_completion_time_s": 0.196921462,
+        "groq_prompt_time_s": 0.056675034,
+        "cost_usd": 0.0002196
+      }
+    },
+    {
+      "question": "Why is streaming important for LLM applications built with LangChain?",
+      "answer": "Streaming lets LangChain surface partial results as they are produced, so an application can display output\u202f\u2014\u202fLLM tokens, agent\u2011step updates, reasoning traces, or custom signals\u202f\u2014\u202fbefore the full response is finished. This reduces the perceived latency of LLM calls, makes the UI feel more responsive, and improves overall user experience. Because streaming is built into LangChain\u2019s callback system, it also follows best\u2011practice patterns that boost developer experience and application performance.",
+      "retrieved_sources": [
+        "src/oss/langchain/streaming.mdx",
+        "src/oss/contributing/integrations-langchain.mdx",
+        "src/oss/langchain/streaming.mdx",
+        "src/oss/langchain/models.mdx"
+      ],
+      "expected_sources": [
+        "langchain/streaming.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.5,
+        "latency_ms": 1147.7135000022827
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses why streaming is important, matching the reference. All claims (real-time updates, progressive display, reduced latency, improved UX, integration with callbacks and best\u2011practice patterns) are supported by the retrieved context. The meaning aligns perfectly with the reference answer."
+      },
+      "end_to_end": {
+        "latency_ms": 9053.02639999718,
+        "prompt_tokens": 870,
+        "completion_tokens": 187,
+        "total_tokens": 1057,
+        "groq_completion_time_s": 0.38904851,
+        "groq_prompt_time_s": 0.04912126,
+        "cost_usd": 0.00027075
+      }
+    },
+    {
+      "question": "How does structured output work with create_agent in LangChain?",
+      "answer": "`create_agent` (or `createAgent` in TypeScript) lets you tell the agent what shape the model\u2019s answer should have.  \nYou pass a **response format** \u2013 e.g.:\n\n* a **Zod** schema, a **Standard Schema**, or a raw JSON\u2011Schema object (TS)  \n* a **Pydantic model**, a dataclass, or any other Python schema type (Python)\n\nWhen the model runs, the agent:\n\n1. **Generates the structured data** directly in its main reasoning loop (no extra LLM call).  \n2. **Captures** the model\u2019s output, **validates** it against the schema you supplied.  \n3. **Places** the validated object in the agent\u2019s state under the key  \n   * `structuredResponse` (TS) or  \n   * `structured_response` (Python).\n\nIn LangChain\u202fv1 the structured\u2011output step is integrated into the main loop, which reduces latency and cost, and the `ToolStrategy` wrapper can be used to specify the schema (e.g., `ToolStrategy(Weather)` where `Weather` is a Pydantic model). The result you receive from `agent.invoke(...)` therefore contains the structured data ready for your application.",
+      "retrieved_sources": [
+        "src/oss/langchain/structured-output.mdx",
+        "src/oss/langchain/structured-output.mdx",
+        "src/oss/python/releases/langchain-v1.mdx",
+        "src/oss/python/migrate/langchain-v1.mdx"
+      ],
+      "expected_sources": [
+        "langchain/structured-output.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.6309297535714575,
+        "latency_ms": 1083.3838999969885
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly explains how structured output works with create_agent, matching the reference answer. It correctly states that a response_format schema is provided, the model generates structured data in the main loop, the output is captured and validated, and the result is placed in the structured_response (or structuredResponse) key. All claims are supported by the retrieved context."
+      },
+      "end_to_end": {
+        "latency_ms": 11003.640099996119,
+        "prompt_tokens": 904,
+        "completion_tokens": 375,
+        "total_tokens": 1279,
+        "groq_completion_time_s": 0.777706204,
+        "groq_prompt_time_s": 0.043101466,
+        "cost_usd": 0.00041685
+      }
+    },
+    {
+      "question": "How do I build a semantic search engine over documents in LangChain?",
+      "answer": "To build a semantic search engine with LangChain you follow these steps:\n\n1. **Load the source material** \u2013 Use a LangChain document loader (e.g., the PDF loader) to read the file and create `Document` objects.  \n2. **Split the text** \u2013 Chunk each document with a text splitter (e.g., `RecursiveCharacterTextSplitter`) so the pieces are small enough for embedding.  \n3. **Generate embeddings** \u2013 Pass the chunks through a LangChain embeddings model (e.g., OpenAI, Cohere, etc.) to obtain vector representations.  \n4. **Store vectors** \u2013 Insert the embeddings into a vector\u2011store integration (FAISS, Pinecone, Chroma, etc.). This indexes the chunks for similarity search.  \n5. **Create a retriever** \u2013 Wrap the vector store with `as_retriever()` (or the equivalent method) so you can retrieve the most similar chunks for a query.  \n6. **Query** \u2013 Supply a query string to the retriever; it returns the top\u2011k passages whose embeddings are nearest to the query embedding.  \n\nOptionally, plug the retriever into a Retrieval\u2011Augmented Generation (RAG) pipeline to feed the retrieved passages to an LLM for answer generation.",
+      "retrieved_sources": [
+        "src/oss/langchain/knowledge-base.mdx",
+        "src/oss/learn.mdx",
+        "src/oss/langchain/knowledge-base.mdx",
+        "src/oss/deepagents/retrieval.mdx"
+      ],
+      "expected_sources": [
+        "langchain/knowledge-base.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.5,
+        "latency_ms": 851.3765000097919
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses how to build a semantic search engine in LangChain, matching the steps described in the retrieved context and reference answer. All claims are supported by the context, and the answer correctly summarizes the process without adding unsupported information."
+      },
+      "end_to_end": {
+        "latency_ms": 7740.442300011637,
+        "prompt_tokens": 771,
+        "completion_tokens": 327,
+        "total_tokens": 1098,
+        "groq_completion_time_s": 0.689120016,
+        "groq_prompt_time_s": 0.055459039,
+        "cost_usd": 0.0003609
+      }
+    },
+    {
+      "question": "What is short-term memory in a LangChain agent?",
+      "answer": "Short\u2011term memory is the **thread\u2011level persistence** that a LangChain agent keeps as part of its **agent state**.  \nIt stores the conversation context (e.g., the `messages` history) and any additional fields you add, allowing the agent to access the full context of a given thread while keeping separate threads isolated. The state is persisted to a database or in\u2011memory store via a **checkpointer**, and it is updated after each agent invocation or step (such as a tool call) and read at the start of each step.",
+      "retrieved_sources": [
+        "src/oss/langchain/short-term-memory.mdx",
+        "src/oss/langchain/short-term-memory.mdx",
+        "src/oss/langchain/short-term-memory.mdx",
+        "src/oss/langchain/short-term-memory.mdx"
+      ],
+      "expected_sources": [
+        "langchain/short-term-memory.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 2.5616063116448506,
+        "latency_ms": 1255.4950000048848
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly defines short\u2011term memory for a LangChain agent, matching the question. It aligns with the reference meaning that it remembers prior interactions (conversation history) within a thread. All statements (thread\u2011level persistence, part of agent state, storing messages, checkpointer persistence, update/read timing) are supported by the retrieved context, with no unsupported claims."
+      },
+      "end_to_end": {
+        "latency_ms": 7857.602999996743,
+        "prompt_tokens": 800,
+        "completion_tokens": 323,
+        "total_tokens": 1123,
+        "groq_completion_time_s": 0.674877889,
+        "groq_prompt_time_s": 0.035546631,
+        "cost_usd": 0.00036225
+      }
+    },
+    {
+      "question": "What is long-term memory used for in LangChain agents?",
+      "answer": "Long\u2011term memory lets a LangChain (or Deep) agent keep information **beyond a single thread or session**.  \nIt is used to persist data such as:\n\n* user preferences  \n* accumulated knowledge or facts about the user  \n* research progress or other state that should survive across conversations  \n\nIn short, it provides durable, cross\u2011thread storage so the agent can recall information from earlier interactions.",
+      "retrieved_sources": [
+        "src/oss/deepagents/context-engineering.mdx",
+        "src/oss/langchain/long-term-memory.mdx",
+        "src/oss/langchain/short-term-memory.mdx",
+        "src/oss/concepts/memory.mdx"
+      ],
+      "expected_sources": [
+        "langchain/long-term-memory.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.25,
+        "recall_at_k": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_k": 0.6309297535714575,
+        "latency_ms": 1176.489900011802
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses the question about the purpose of long-term memory in LangChain agents, matching the reference answer. All claims (cross\u2011thread/session persistence, storing user preferences, accumulated knowledge, research progress) are explicitly supported by the retrieved context. No unsupported or fabricated statements are present."
+      },
+      "end_to_end": {
+        "latency_ms": 10731.103600002825,
+        "prompt_tokens": 993,
+        "completion_tokens": 209,
+        "total_tokens": 1202,
+        "groq_completion_time_s": 0.435188852,
+        "groq_prompt_time_s": 0.039792283,
+        "cost_usd": 0.0003057
+      }
+    },
+    {
+      "question": "What decision types can a human choose from when a LangChain agent's tool call is interrupted?",
+      "answer": "When a tool call is interrupted, the human can choose one of four decision types:\n\n- **approve** \u2013 accept the proposed action as\u2011is  \n- **edit** \u2013 modify the tool arguments before execution  \n- **reject** \u2013 deny the action and optionally provide feedback  \n- **respond** \u2013 supply a direct response (used for \u201cask\u202fuser\u201d\u2011style tools)  \n\nThese are the built\u2011in decision types defined by the Human\u2011in\u2011the\u2011Loop middleware.",
+      "retrieved_sources": [
+        "src/oss/langchain/human-in-the-loop.mdx",
+        "src/oss/langchain/human-in-the-loop.mdx",
+        "src/oss/langchain/human-in-the-loop.mdx",
+        "src/oss/deepagents/human-in-the-loop.mdx"
+      ],
+      "expected_sources": [
+        "langchain/human-in-the-loop.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.75,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 2.1309297535714578,
+        "latency_ms": 1051.2614000035683
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly lists the four decision types (approve, edit, reject, respond) exactly as described in the retrieved context and matches the reference answer. No unsupported claims are made."
+      },
+      "end_to_end": {
+        "latency_ms": 10943.113400004222,
+        "prompt_tokens": 1016,
+        "completion_tokens": 266,
+        "total_tokens": 1282,
+        "groq_completion_time_s": 0.55992304,
+        "groq_prompt_time_s": 0.039812791,
+        "cost_usd": 0.0003519
+      }
+    },
+    {
+      "question": "How do LangChain agents use tools from an MCP server?",
+      "answer": "LangChain agents can call functions that an MCP server publishes as **MCP tools**.  \nThe typical flow is:\n\n1. **Run an MCP server** (e.g., the MCP Toolbox or a Deep\u202fAgents MCP server).  \n2. **Install the MCP adapter packages** \u2013 e.g. `toolbox\u2011langchain`, `langchain\u2011mcp\u2011adapters`, `langgraph`, `langchain\u2011google\u2011vertexai`, etc.  \n3. **Load the tools** from the server:  \n   * In a regular LangChain agent you can use `ToolboxClient` (or the generic `load_mcp_tools` from `langchain_mcp_adapters.tools`).  \n   * In a Deep\u202fAgents workflow you call `load_mcp_tools` and pass the returned list directly to `create_deep_agent`.  \n4. **Create the agent** with the loaded tools:  \n   ```python\n   from langchain.agents import create_agent          # or deepagents.create_deep_agent\n   from langchain_google_vertexai import ChatVertexAI\n   from toolbox_langchain import ToolboxClient\n\n   # Example for a standard LangChain agent\n   client = ToolboxClient(base_url=\"http://localhost:8000\")\n   tools = client.get_tools()          # converts MCP tools \u2192 LangChain tools\n   agent = create_agent(model=ChatVertexAI(), tools=tools)\n   ```\n5. The agent\u2019s reasoning chain can now **select and invoke** any of those tools just like native LangChain tools (e.g., `tool.run(...)`), allowing it to query databases, call APIs, browse the web, etc., without writing custom wrappers.\n\nIn short, LangChain agents use MCP tools by loading them from a running MCP server (via `ToolboxClient` or `load_mcp_tools`) and supplying them to `create_agent`/`create_deep_agent`; the framework then treats them as ordinary LangChain tools that the LLM can call as needed.",
+      "retrieved_sources": [
+        "src/oss/python/integrations/tools/mcp_toolbox.mdx",
+        "src/oss/deepagents/tools.mdx",
+        "src/oss/langchain/mcp.mdx",
+        "src/oss/python/integrations/tools/stagehand.mdx"
+      ],
+      "expected_sources": [
+        "langchain/mcp.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.25,
+        "recall_at_k": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_k": 0.5,
+        "latency_ms": 1276.3516999984859
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly explains how LangChain agents load and use MCP tools, matching the retrieved documentation and the reference answer. All claims are supported by the provided context, and the explanation aligns with the reference statement that agents use tools via the langchain-mcp-adapters library."
+      },
+      "end_to_end": {
+        "latency_ms": 8834.823999990476,
+        "prompt_tokens": 923,
+        "completion_tokens": 662,
+        "total_tokens": 1585,
+        "groq_completion_time_s": 1.369497704,
+        "groq_prompt_time_s": 0.073827804,
+        "cost_usd": 0.00063495
+      }
+    },
+    {
+      "question": "What are guardrails used for in LangChain agents?",
+      "answer": "Guardrails are safety\u2011and\u2011compliance layers you add to a LangChain agent.\u202fThey intercept execution (via middleware) to validate and filter content, detect sensitive information or prompt\u2011injection attacks, block harmful or inappropriate output, enforce business rules and compliance, and verify the quality and accuracy of the agent\u2019s final response before it is returned.",
+      "retrieved_sources": [
+        "src/oss/langchain/guardrails.mdx",
+        "src/oss/langchain/guardrails.mdx",
+        "src/oss/langchain/guardrails.mdx",
+        "src/oss/langchain/guardrails.mdx"
+      ],
+      "expected_sources": [
+        "langchain/guardrails.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 2.5616063116448506,
+        "latency_ms": 1134.8534999997355
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses the question by explaining that guardrails are safety and compliance layers that intercept execution via middleware to validate and filter content. All listed functions (detecting sensitive info, preventing PII leakage, blocking prompt injection and harmful content, enforcing business rules, and verifying output quality) are present in the retrieved context. The answer matches the reference answer's meaning without adding unsupported claims."
+      },
+      "end_to_end": {
+        "latency_ms": 5913.967300002696,
+        "prompt_tokens": 1010,
+        "completion_tokens": 227,
+        "total_tokens": 1237,
+        "groq_completion_time_s": 0.469997369,
+        "groq_prompt_time_s": 0.046271567,
+        "cost_usd": 0.00032175
+      }
+    },
+    {
+      "question": "How can I get visibility into how my LangChain agent behaves in production?",
+      "answer": "You get production\u2011time visibility by **enabling LangSmith tracing** for your agent.  \nLangChain agents created with `create_agent` (or `createAgent`) automatically hook into **LangSmith**, which records a\u202f*trace* for every execution \u2013 from the user input through each prompt, tool call, model interaction and decision point. Those traces are stored in the LangSmith platform, where you can:\n\n* debug issues by stepping through the recorded steps,  \n* evaluate performance across inputs, and  \n* monitor usage patterns in production.\n\nSo, turn on LangSmith tracing for your agent and use the LangSmith observability UI to inspect the captured traces.",
+      "retrieved_sources": [
+        "src/oss/langchain/observability.mdx",
+        "src/oss/langchain/observability.mdx",
+        "src/oss/langchain/test/index.mdx",
+        "src/oss/langgraph/studio.mdx"
+      ],
+      "expected_sources": [
+        "langchain/observability.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.6309297535714575,
+        "latency_ms": 1192.3202000034507
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses the question by stating that enabling LangSmith tracing provides visibility. It accurately reflects the retrieved context and reference answer, mentioning automatic tracing support via create_agent/createAgent, recording of traces for each step, and the ability to debug, evaluate, and monitor in production. No unsupported claims are present."
+      },
+      "end_to_end": {
+        "latency_ms": 9004.993700000341,
+        "prompt_tokens": 889,
+        "completion_tokens": 263,
+        "total_tokens": 1152,
+        "groq_completion_time_s": 0.715126354,
+        "groq_prompt_time_s": 0.041708145,
+        "cost_usd": 0.0003306
+      }
+    },
+    {
+      "question": "What's the first step in the LangChain quickstart before creating an agent?",
+      "answer": "The first thing you do is install the **deepagents** package (e.g., `uv add deepagents` or `pip install deepagents`) before assembling and running the agent.",
+      "retrieved_sources": [
+        "src/oss/deepagents/quickstart.mdx",
+        "src/oss/langchain/quickstart.mdx",
+        "src/oss/langchain/quickstart.mdx",
+        "src/oss/deepagents/quickstart.mdx"
+      ],
+      "expected_sources": [
+        "langchain/quickstart.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.5,
+        "recall_at_k": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_k": 1.1309297535714575,
+        "latency_ms": 1263.1095999968238
+      },
+      "generation": {
+        "faithfulness": 2,
+        "answer_relevance": 3,
+        "correctness": 1,
+        "justification": "The answer attempts to address the question about the first step before creating an agent, but it states to install the deepagents package, which is not the same as installing the required LangChain packages referenced in the correct answer. The context does show a step to install deepagents, but the question pertains to the LangChain quickstart, making the claim unsupported for that context. Thus relevance is moderate, correctness is poor (contradicts reference), and faithfulness is low because the claim is not supported by the LangChain quickstart context."
+      },
+      "end_to_end": {
+        "latency_ms": 6909.864399989601,
+        "prompt_tokens": 887,
+        "completion_tokens": 382,
+        "total_tokens": 1269,
+        "groq_completion_time_s": 0.797788884,
+        "groq_prompt_time_s": 0.050360001,
+        "cost_usd": 0.00041955
+      }
+    },
+    {
+      "question": "Why would I use a multi-agent system instead of a single agent in LangChain?",
+      "answer": "A multi\u2011agent architecture lets you break a large, monolithic agent into smaller, purpose\u2011built workers.\u202fAccording to the docs, this gives you:\n\n* **Parallelization** \u2013 you can spawn specialized agents that run concurrently, speeding up overall execution.  \n* **Tool\u2011selection clarity** \u2013 when a single agent has dozens of tools, it often makes poor choices; dividing tools among dedicated agents lets each one focus on a narrow set of APIs (e.g., calendar vs. email) and understand their exact formats.  \n* **Domain\u2011specific expertise** \u2013 agents can carry long, context\u2011rich prompts and domain\u2011specific tools, avoiding the \u201cone\u2011size\u2011fits\u2011all\u201d limitation of a single agent.  \n* **Sequential constraints & control** \u2013 you can enforce ordering (unlock capabilities only after certain conditions) that is hard to manage in a single loop.  \n* **Context engineering** \u2013 each agent sees only the data it needs, improving decision quality and system robustness.  \n* **Iterative improvement** \u2013 logical grouping of tools and prompts makes it easier to update or replace individual workers without affecting the whole system.\n\nIn short, you use a multi\u2011agent system when you need faster, more reliable, and more maintainable behavior than a single, all\u2011purpose LangChain agent can provide.",
+      "retrieved_sources": [
+        "src/oss/langchain/multi-agent/index.mdx",
+        "src/oss/langchain/multi-agent/subagents-personal-assistant.mdx",
+        "src/oss/langgraph/overview.mdx",
+        "src/oss/concepts/products.mdx"
+      ],
+      "expected_sources": [
+        "langchain/multi-agent/index.mdx"
+      ],
+      "retrieval": {
+        "precision_at_k": 0.25,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 1.0,
+        "latency_ms": 1093.2823000039207
+      },
+      "generation": {
+        "faithfulness": 5,
+        "answer_relevance": 5,
+        "correctness": 5,
+        "justification": "The answer directly addresses why to use multi-agent over single agent in LangChain, matching the question. Its points (parallelization, tool selection, domain expertise, sequential constraints, context engineering, iterative improvement) are all supported by the retrieved documentation excerpts. These points also align with the reference answer's emphasis on context management, distributed development, and parallelization, with no contradictory or fabricated statements."
+      },
+      "end_to_end": {
+        "latency_ms": 8256.747000006726,
+        "prompt_tokens": 916,
+        "completion_tokens": 413,
+        "total_tokens": 1329,
+        "groq_completion_time_s": 1.06968011,
+        "groq_prompt_time_s": 0.041369051,
+        "cost_usd": 0.00044715
+      }
+    }
+  ]
+}

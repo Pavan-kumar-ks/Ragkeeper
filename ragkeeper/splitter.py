@@ -21,3 +21,8 @@ def split_markdown(raw_text: str, chunk_size: int, chunk_overlap: int) -> list[D
 
 def header_hierarchy(chunk_metadata: dict) -> list[str]:
     return [chunk_metadata[key] for key in ("h1", "h2", "h3", "h4") if key in chunk_metadata]
+
+
+def build_contextual_text(doc_title: str, hierarchy: list[str], content: str) -> str:
+    breadcrumb = " > ".join([doc_title, *hierarchy]) if hierarchy else doc_title
+    return f"{breadcrumb}\n\n{content}"

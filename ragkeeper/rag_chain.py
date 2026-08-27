@@ -3,7 +3,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from .config import get_settings
+from .retrieval import BM25Index, HybridRetriever, Reranker, RetrievalPipeline, make_llm_query_expander
 from .vectorstore import get_client, get_embeddings, get_vectorstore
+
+FALLBACK_ANSWER = (
+    "I don't have reliable information in the LangChain docs to answer that confidently."
+)
 
 SYSTEM_PROMPT = """You are RAGKeeper, an assistant that answers questions about LangChain using \
 only the provided documentation excerpts.
@@ -32,12 +37,23 @@ class RagKeeperChat:
         client = get_client(settings.qdrant_url)
         embeddings = get_embeddings(settings.embedding_model)
         vectorstore = get_vectorstore(client, settings.qdrant_collection, embeddings)
-        self.retriever = vectorstore.as_retriever(search_kwargs={"k": settings.top_k})
+        bm25_index = BM25Index(client, settings.qdrant_collection)
+        hybrid_retriever = HybridRetriever(vectorstore, bm25_index, k=settings.top_k, candidate_k=20)
+        reranker = Reranker()
         self.llm = ChatGroq(model=settings.groq_model, temperature=0, api_key=settings.groq_api_key)
+        query_expander = make_llm_query_expander(self.llm) if settings.enable_query_expansion else None
+        self.retriever = RetrievalPipeline(
+            hybrid_retriever, reranker, k=settings.top_k, pool_size=20, query_expander=query_expander
+        )
+        self.confidence_threshold = settings.confidence_threshold
         self.chain = PROMPT | self.llm | StrOutputParser()
 
     def answer(self, question: str) -> tuple[str, list[str]]:
-        docs = self.retriever.invoke(question)
+        ranked = self.retriever.retrieve_with_score(question)
+        if not ranked or ranked[0][1] < self.confidence_threshold:
+            return FALLBACK_ANSWER, []
+
+        docs = [doc for doc, _score in ranked]
         context = format_context(docs)
         answer_text = self.chain.invoke({"context": context, "question": question})
 

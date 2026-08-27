@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     chunk_overlap: int = 200
     top_k: int = 4
 
+    enable_query_expansion: bool = False
+    confidence_threshold: float = 0.0
+
 
 @lru_cache
 def get_settings() -> Settings:
