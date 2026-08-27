@@ -77,7 +77,7 @@ on the golden set:
    it is **not always** `http://localhost:6333`. If Docker is running via WSL2 (common on
    Windows), `localhost` from Windows may not resolve to the container; use the WSL VM's
    IP instead (`wsl hostname -I`) or the address you're already using in `.env`, e.g.
-   `http://172.27.122.123:6333`. That IP is assigned by WSL2 and can change after a
+   `http://172.27.122.123:6333/dashboard#/collections`. That IP is assigned by WSL2 and can change after a
    reboot — if the dashboard stops loading, re-check `wsl hostname -I` and update
    `QDRANT_URL` accordingly.
 
