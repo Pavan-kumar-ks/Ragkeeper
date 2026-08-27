@@ -71,12 +71,15 @@ on the golden set:
    ```
    docker compose up -d
    ```
-   Dashboard: http://localhost:6333/dashboard
+   Dashboard: open `<QDRANT_URL from your .env>/dashboard` in a browser.
 
-   `QDRANT_URL` in `.env` must point at wherever your Qdrant instance is actually
-   reachable — `http://localhost:6333` for the local `docker compose` setup above, or the
-   real host/pod address if Qdrant runs elsewhere (e.g. a remote Docker host, a WSL VM, or
-   a Kubernetes pod's service endpoint).
+   `QDRANT_URL` must point at wherever Qdrant is actually reachable from this machine —
+   it is **not always** `http://localhost:6333`. If Docker is running via WSL2 (common on
+   Windows), `localhost` from Windows may not resolve to the container; use the WSL VM's
+   IP instead (`wsl hostname -I`) or the address you're already using in `.env`, e.g.
+   `http://172.27.122.123:6333`. That IP is assigned by WSL2 and can change after a
+   reboot — if the dashboard stops loading, re-check `wsl hostname -I` and update
+   `QDRANT_URL` accordingly.
 
 ### Configuration (`.env`)
 
