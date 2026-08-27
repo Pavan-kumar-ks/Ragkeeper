@@ -7,3 +7,36 @@ services:
       - "6334:6334"
     volumes:
       - ./qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: ragkeeper-app
+    command: streamlit run dashboard/app.py --server.address=0.0.0.0 --server.port=8501
+    ports:
+      - "8501:8501"
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      qdrant:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    container_name: ragkeeper-scheduler
+    command: python main.py schedule --interval-hours 24
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      qdrant:
+        condition: service_healthy

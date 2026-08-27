@@ -1,0 +1,12 @@
+venv/
+data/
+qdrant_storage/
+.git/
+eval_results/
+mcp_output.txt
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.egg-info/
+.claude/
